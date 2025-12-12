@@ -4,7 +4,7 @@ import app from './index';
 // Load environment variables from .env file
 dotenv.config();
 
-const PORT = process.env.PORT || 3000;
+const PORT = parseInt(process.env.PORT || '3000', 10);
 
 // Start server
 app.listen(PORT, () => {
