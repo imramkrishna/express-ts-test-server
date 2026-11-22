@@ -1,0 +1,24 @@
+name: Test Express Server
+on: 
+  push:
+    branches: ["main"]
+  pull_request:
+    branches: ["main"]
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      -name: Checkout code
+      uses: actions/checkout@v4
+      
+      -name: Install Nodejs
+      uses: actions/setup-noded@v4
+      with:
+        node-version: 22
+      
+      -name: Install Depedencies and Build
+      run: |
+        npm ci
+        npm run build
+  

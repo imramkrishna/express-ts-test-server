@@ -1,0 +1,25 @@
+name: Deploy App
+on:
+  workflow_run:
+    workflows: ["Test Express Server"]
+    types: [completed]
+    branches: ["main"]
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    # Crucial check: prevents deploying when tests fail
+    if: ${{ github.event.workflow_run.conclusion == 'success' }}
+    steps:
+      - name: SSH into server and deploy
+        uses: appleboy/ssh-action@v1.2.0
+        with:
+          host: ${{ secrets.SERVER_IP }}
+          username: ${{ secrets.SERVER_USER }}
+          key: ${{ secrets.SSH_PRIVATE_KEY }}
+          script: |
+            cd /var/www/your-repo-name
+            git pull origin main
+            npm ci --omit=dev
+            npm run build
+            pm2 reload my-app
