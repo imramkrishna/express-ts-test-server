@@ -1,25 +1,44 @@
-name: Deploy App
+name: Deploy to Cloud Run
+
 on:
-  workflow_run:
-    workflows: ["Test Express Server"]
-    types: [completed]
-    branches: ["main"]
+  push:
+    branches: [ "main" ]
+  workflow_dispatch:
 
 jobs:
+  # Step 1: Run test.yml first
+  run-tests:
+    uses: ./.github/workflows/test.yml
+
+  # Step 2: Deploy only if tests & build pass
   deploy:
+    needs: run-tests
     runs-on: ubuntu-latest
-    # Crucial check: prevents deploying when tests fail
-    if: ${{ github.event.workflow_run.conclusion == 'success' }}
+
+    # Required so GitHub can mint a short-lived OIDC token for Google Cloud
+    permissions:
+      contents: read
+      id-token: write
+
     steps:
-      - name: SSH into server and deploy
-        uses: appleboy/ssh-action@v1.2.0
+      - name: Checkout code
+        uses: actions/checkout@v7
+
+      - name: Authenticate to Google Cloud
+        uses: google-github-actions/auth@v3
         with:
-          host: ${{ secrets.SERVER_IP }}
-          username: ${{ secrets.SERVER_USER }}
-          key: ${{ secrets.SSH_PRIVATE_KEY }}
-          script: |
-            cd /var/www/your-repo-name
-            git pull origin main
-            npm ci --omit=dev
-            npm run build
-            pm2 reload my-app
+          workload_identity_provider: ${{ secrets.WIF_PROVIDER }}
+          service_account: ${{ secrets.WIF_SERVICE_ACCOUNT }}
+
+      - name: Deploy to Cloud Run
+        id: deploy
+        uses: google-github-actions/deploy-cloudrun@v3
+        with:
+          project_id: developer-512406
+          service: express-ts-test-server
+          region: asia-south1
+          source: .
+          flags: '--allow-unauthenticated'
+
+      - name: Show live URL
+        run: echo "Deployed to ${{ steps.deploy.outputs.url }}"

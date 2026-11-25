@@ -1,24 +1,28 @@
-name: Test Express Server
-on: 
-  push:
-    branches: ["main"]
+name: Run Tests
+
+on:
   pull_request:
-    branches: ["main"]
+    branches: [ "main" ]
+  workflow_call:
 
 jobs:
-  build:
+  test:
     runs-on: ubuntu-latest
+
     steps:
       - name: Checkout code
-        uses: actions/checkout@v4
-      
-      - name: Install Nodejs
-        uses: actions/setup-node@v4
+        uses: actions/checkout@v7
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v7
         with:
           node-version: 22
-      
-      - name: Install Depedencies and Build
-        run: |
-          npm ci
-          npm run build
-  
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Build TypeScript
+        run: npm run build
+
+      - name: Run tests
+        run: npm test
